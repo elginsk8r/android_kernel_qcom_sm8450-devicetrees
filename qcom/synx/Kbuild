@@ -8,6 +8,10 @@ ifeq ($(CONFIG_ARCH_SUN), y)
 include $(srctree)/$(src)/config/sun.mk
 endif
 
+ifeq ($(CONFIG_ARCH_CAPE), y)
+include $(srctree)/$(src)/config/waipio.mk
+endif
+
 always-y	:= $(dtbo-y) $(dtb-y)
 subdir-y	:= $(dts-dirs)
 clean-files	:= *.dtb *.dtbo
