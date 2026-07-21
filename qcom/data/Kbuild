@@ -45,6 +45,10 @@ dtbo-y += kera-ipa.dtbo
 dtbo-y += kera-smem-mailbox.dtbo
 endif
 
+ifeq ($(CONFIG_ARCH_CAPE),y)
+dtbo-y += cape-ipa.dtbo
+endif
+
 always-y	:= $(dtb-y) $(dtbo-y)
 subdir-y	:= $(dts-dirs)
 clean-files	:= *.dtb *.dtbo
