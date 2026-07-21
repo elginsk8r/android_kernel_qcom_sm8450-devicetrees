@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: BSD-3-Clause
+
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+&soc {
+	bluetooth: bt_qca6490 {
+		compatible = "qcom,qca6490";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bt_en_sleep>;
+		qcom,wl-reset-gpio = <&tlmm 80 0>; /* WL_CTRL */
+		qcom,bt-reset-gpio = <&tlmm 81 0>; /* BT_EN */
+		qcom,bt-sw-ctrl-gpio = <&tlmm 82 0>; /* SW_CTRL */
+		qcom,xo-clk-gpio = <&tlmm 204 0>; /* XO */
+		qcom,qmp = <&aoss_qmp>;
+		qcom,vreg_ipa="s3e";
+
+		qcom,bt-vdd-io-supply = <&S10B>;  /* IO */
+		qcom,bt-vdd-aon-supply = <&S11B>;
+		qcom,bt-vdd-dig-supply = <&S11B>; /* BT_CX_MX */
+		qcom,bt-vdd-rfacmn-supply = <&S11B>;
+		qcom,bt-vdd-rfa-0p8-supply = <&S11B>;
+		qcom,bt-vdd-rfa1-supply = <&S1C>; /* RFA 1p7 */
+		qcom,bt-vdd-rfa2-supply = <&S12B>; /* RFA 1p2 */
+		qcom,bt-vdd-asd-supply = <&L7E>;
+
+		/* Max Voltages are derived from the buck Max Voltage */
+		qcom,bt-vdd-io-config = <1800000 1800000 0 1>;
+		qcom,bt-vdd-aon-config = <966000 1170000 0 1>;
+		qcom,bt-vdd-dig-config = <966000 1170000 0 1>;
+		qcom,bt-vdd-rfacmn-config  = <966000 1170000 0 1>;
+		qcom,bt-vdd-rfa-0p8-config  = <966000 1170000 0 1>;
+		qcom,bt-vdd-rfa1-config = <1900000 2040000 0 1>;
+		qcom,bt-vdd-rfa2-config = <1350000 2024000 0 1>;
+		qcom,bt-vdd-asd-config = <2800000 2800000 0 1>;
+
+		/* This read as part of ipa */
+		qcom,vreg_ipa-supply=<&S3E>;
+		qcom,vreg_ipa-config= <2200000 2200000 0 1>;
+	};
+
+	slim_msm: slim@3340000 {
+		compatible = "qcom,slim-ngd-v1.5.0";
+		reg = <0x3340000 0x2C000>, <0x326a000 0x1000>;
+		reg-names = "ctrl", "slimbus_remote_mem";
+		interrupts = <0 163 IRQ_TYPE_LEVEL_HIGH>;
+		qcom,apps-ch-pipes = <0x0>;
+		qcom,ea-pc = <0x450>;
+		dmas = <&slimbam 3>, <&slimbam 4>;
+		dma-names = "rx", "tx";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "ok";
+		ngd@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			/* slimbus child nodes */
+			slimbus: btfmslim-driver {
+				compatible = "slim217,221";
+				reg = <1 0>;
+			};
+		};
+	};
+};
+
+//FM changes
+&qupv3_se5_i2c {
+	status = "ok";
+	nq@64 {
+		compatible = "rtc6226";
+		reg = <0x64>;
+		fmint-gpio = <&tlmm 44 0>;
+		vdd-supply = <&L7E>;
+		rtc6226,vdd-supply-voltage = <2800000 2800000>;
+		rtc6226,vdd-load = <15000>;
+		vio-supply = <&S10B>;
+		rtc6226,vio-supply-voltage = <1800000 1800000>;
+	};
+};
+
+//uart instance
+&qupv3_se20_4uart {
+	status = "ok";
+};
