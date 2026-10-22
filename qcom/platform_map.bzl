@@ -1,3 +1,4 @@
+
 _platform_map = {
     "sdxkova": {
         "dtb_list": [
@@ -615,7 +616,26 @@ _platform_map = {
     },
 }
 
-def _get_dtb_lists(target, dt_overlay_supported):
+def _append_unique(lst, name):
+    if not {"name": name} in lst:
+        lst.append({"name": name})
+
+def _matches(entry, product):
+    entry_product = entry.get("product", "default")
+    if product:
+        # When building for a specific product, only include matching product entries
+        return entry_product == product
+    else:
+        # When building generic targets, only include default/untagged entries
+        return entry_product == "default"
+
+def _get_dtb_lists(target, dt_overlay_supported, product):
+    """Returns the dtb/dtbo lists of a target.
+
+    Entries tagged with a Motorola "product" are only returned for that product,
+    untagged entries are always returned. The product comes from
+    --//vendor/qcom/kernel:mmi_product, callers select() between the lists.
+    """
     if not target in _platform_map:
         fail("{} not in device tree platform map!".format(target))
 
@@ -623,26 +643,45 @@ def _get_dtb_lists(target, dt_overlay_supported):
         "dtb_list": [],
         "dtbo_list": [],
     }
-
     for dtb_node in [target] + _platform_map[target].get("binary_compatible_with", []):
-        ret["dtb_list"].extend(_platform_map[dtb_node].get("dtb_list", []))
+        for dtb in _platform_map[dtb_node].get("dtb_list", []):
+            if _matches(dtb, product):
+                _append_unique(ret["dtb_list"], dtb["name"])
+
         if dt_overlay_supported:
-            ret["dtbo_list"].extend(_platform_map[dtb_node].get("dtbo_list", []))
+            for dtbo in _platform_map[dtb_node].get("dtbo_list", []):
+                if _matches(dtbo, product):
+                    _append_unique(ret["dtbo_list"], dtbo["name"])
         else:
             # Translate the dtbo list into dtbs we can append to main dtb_list
             for dtb in _platform_map[dtb_node].get("dtb_list", []):
+                if not _matches(dtb, product):
+                    continue
                 dtb_base = dtb["name"].replace(".dtb", "")
                 for dtbo in _platform_map[dtb_node].get("dtbo_list", []):
+                    if not _matches(dtbo, product):
+                        continue
                     if not dtbo.get("apq", True) and dtb.get("apq", False):
                         continue
 
                     dtbo_base = dtbo["name"].replace(".dtbo", "")
-                    ret["dtb_list"].append({"name": "{}-{}.dtb".format(dtb_base, dtbo_base)})
+                    _append_unique(ret["dtb_list"], "{}-{}.dtb".format(dtb_base, dtbo_base))
 
     return ret
 
-def get_dtb_list(target, dt_overlay_supported = True):
-    return [dtb["name"] for dtb in _get_dtb_lists(target, dt_overlay_supported).get("dtb_list", [])]
+def get_dtb_products(target):
+    """Returns the Motorola products that have device trees tagged for target."""
+    products = []
+    for dtb_node in [target] + _platform_map[target].get("binary_compatible_with", []):
+        for key in ["dtb_list", "dtbo_list"]:
+            for entry in _platform_map[dtb_node].get(key, []):
+                product = entry.get("product", "default")
+                if product != "default" and product not in products:
+                    products.append(product)
+    return sorted(products)
 
-def get_dtbo_list(target, dt_overlay_supported = True):
-    return [dtb["name"] for dtb in _get_dtb_lists(target, dt_overlay_supported).get("dtbo_list", [])]
+def get_dtb_list(target, dt_overlay_supported = True, product = None):
+    return [dtb["name"] for dtb in _get_dtb_lists(target, dt_overlay_supported, product).get("dtb_list", [])]
+
+def get_dtbo_list(target, dt_overlay_supported = True, product = None):
+    return [dtb["name"] for dtb in _get_dtb_lists(target, dt_overlay_supported, product).get("dtbo_list", [])]
