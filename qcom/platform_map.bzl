@@ -543,6 +543,14 @@ _platform_map = {
             {"name": "parrot-paros-evt-overlay.dtbo", "product": "paros",},
         ],
     },
+    "waipio": {
+        "dtb_list": [
+            {"name": "cape.dtb"},
+        ],
+        "dtbo_list": [
+            {"name": "cape-qrd-pm8010-overlay.dtbo"},
+        ],
+    },
 }
 
 def _get_dtb_lists(target, dt_overlay_supported):
